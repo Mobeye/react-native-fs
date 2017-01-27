@@ -8,6 +8,7 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.util.Base64;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.util.SparseArray;
 
 import java.io.File;
@@ -23,6 +24,7 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.Arguments;
@@ -265,6 +267,52 @@ public class RNFSManager extends ReactContextBaseJavaModule {
     reactContext
     .getJSModule(RCTNativeAppEventEmitter.class)
     .emit(eventName, params);
+  }
+
+  @ReactMethod
+  public void downloadSeveralFiles(final ReadableMap options, final Promise promise) {
+    try {
+      ReadableArray URLStrings = options.getArray("fileURLsToDownloadFrom");
+      ReadableArray FileDestinationPathStrings = options.getArray("fileDestinationPaths");
+      URL[] urls = new URL[URLStrings.size()];
+      File[] files = new File[FileDestinationPathStrings.size()];
+
+      for (int i = 0; i < URLStrings.size(); i++) {
+        urls[i] = new URL(URLStrings.getString(i));
+        files[i] = new File(FileDestinationPathStrings.getString(i));
+      }
+
+      MultiDownloadParams multiDownloadParams = new MultiDownloadParams();
+
+      multiDownloadParams.srcURLs = urls;
+      multiDownloadParams.destFiles = files;
+
+      multiDownloadParams.onTaskCompleted = new MultiDownloadParams.OnTaskCompleted() {
+        public void onTaskCompleted(DownloadResult[] downloadResults) {
+          Log.d("RNFS Manager task comp ", Integer.toString(downloadResults.length));
+          promise.resolve("ayé");
+//          if (res.exception == null) {
+//            WritableMap infoMap = Arguments.createMap();
+//
+//            infoMap.putInt("jobId", jobId);
+//            infoMap.putInt("statusCode", res.statusCode);
+//            infoMap.putInt("bytesWritten", res.bytesWritten);
+//
+//            promise.resolve(infoMap);
+//          } else {
+//            reject(promise, options.getString("toFile"), res.exception);
+//          }
+        }
+      };
+
+      MultiDownloader multiDownloader = new MultiDownloader();
+
+      multiDownloader.execute(multiDownloadParams);
+
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      reject(promise, "Failed to write " + options.getArray("fileDestinationPaths").toString(), ex);
+    }
   }
 
   @ReactMethod
