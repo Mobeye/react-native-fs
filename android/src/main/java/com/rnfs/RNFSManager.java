@@ -290,18 +290,29 @@ public class RNFSManager extends ReactContextBaseJavaModule {
       multiDownloadParams.onTaskCompleted = new MultiDownloadParams.OnTaskCompleted() {
         public void onTaskCompleted(DownloadResult[] downloadResults) {
           Log.d("RNFS Manager task comp ", Integer.toString(downloadResults.length));
-          promise.resolve("ayé");
-//          if (res.exception == null) {
-//            WritableMap infoMap = Arguments.createMap();
-//
-//            infoMap.putInt("jobId", jobId);
-//            infoMap.putInt("statusCode", res.statusCode);
-//            infoMap.putInt("bytesWritten", res.bytesWritten);
-//
-//            promise.resolve(infoMap);
-//          } else {
-//            reject(promise, options.getString("toFile"), res.exception);
-//          }
+
+          WritableMap infoMap = Arguments.createMap();
+          WritableArray successfulDownloads = Arguments.createArray();
+          WritableArray failedDownloads = Arguments.createArray();
+
+          for (DownloadResult downloadResult : downloadResults) {
+            if (downloadResult.exception == null) {
+              WritableMap downloadDetails = Arguments.createMap();
+              downloadDetails.putString("srcURL", downloadResult.srcURL);
+              downloadDetails.putString("destFile", downloadResult.destFile);
+              successfulDownloads.pushMap(downloadDetails);
+            } else {
+              failedDownloads.pushString(downloadResult.srcURL);
+            }
+          }
+
+          if (failedDownloads.size() < downloadResults.length) {
+            infoMap.putArray("successfulDownloads", successfulDownloads);
+            infoMap.putArray("failedDownloads", failedDownloads);
+            promise.resolve(infoMap);
+          } else {
+            promise.reject(null, "Shit just got serious, all of your downloads failed. Sorry.");
+          }
         }
       };
 
