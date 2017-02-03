@@ -47,6 +47,9 @@ public class MultiDownloader extends AsyncTask<MultiDownloadParams, int[], Downl
         HttpURLConnection connection = null;
 
         for (int i = 0; i < mDownloadResults.length; i++) {
+            mDownloadResults[i] = new DownloadResult();
+            mDownloadResults[i].srcURL = downloadParams.srcURLs[i].toString();
+            mDownloadResults[i].destFile = downloadParams.destFiles[i].getAbsolutePath();
             try {
                 connection = (HttpURLConnection) downloadParams.srcURLs[i].openConnection();
 
@@ -129,12 +132,12 @@ public class MultiDownloader extends AsyncTask<MultiDownloadParams, int[], Downl
 
                 output.flush();
 
-                // Bizarrement je n'arrive pas à écrire là-dedans --> NullPointer exception
-                mDownloadResults[i] = new DownloadResult();
                 mDownloadResults[i].statusCode = statusCode;
                 mDownloadResults[i].bytesWritten = total;
+
             } catch(Exception e) {
                 Log.d("RNFS MultiDownloader", "Exception in download number " + Integer.toString(i));
+
                 mDownloadResults[i].exception = e;
                 e.printStackTrace();
             } finally {
